@@ -4,6 +4,8 @@ const Domain = require("../models/domainModel");
 const User = require("../models/userModels");
 const { enomUsername, enomApiKey, enomBaseUrl } = require("../config/config");
 const { default: axios } = require("axios");
+const domainPrices = require("../utils/domainPrices");
+const stripe = require("stripe")(process.env.STIPE_KEY);
 
 //check the domain
 const checkDomain = async (req, res, next) => {
@@ -65,6 +67,13 @@ const registerDomain = async (req, res, next) => {
         new HttpError("Invalid domain format. Use 'example.com'", 422)
       );
     }
+
+    if (!domainPrices[tld]) {
+      return next(new HttpError("Unsupported domain extension.", 400));
+    }
+
+    const price = domainPrices[tld];
+
     const response = await axios.get(`${enomBaseUrl}/interface.asp`, {
       params: {
         command: "Check",
@@ -74,9 +83,9 @@ const registerDomain = async (req, res, next) => {
         tld,
         responseType: "JSON",
       },
-      timeout: 15000,
+      timeout: 30000,
     });
-    console.log("Response Data:", response.data);
+
     if (
       response.data["interface-response"] &&
       response.data["interface-response"].RRPCode !== "210"
@@ -85,6 +94,68 @@ const registerDomain = async (req, res, next) => {
         new HttpError("Domain is not available for registration.", 400)
       );
     }
+
+    const session = await stripe.checkout.sessions.create({
+      line_items: [
+        {
+          price_data: {
+            currency: "usd",
+            product_data: {
+              name: `Domain Registration: ${domain}`,
+            },
+            unit_amount: Math.round(price * 100),
+          },
+          quantity: 1,
+        },
+      ],
+
+      mode: "payment",
+      success_url: `${process.env.CLIENT_URL}/checkout/success?session_id={CHECKOUT_SESSION_ID}&domain=${domain}`,
+      cancel_url: `${process.env.CLIENT_URL}/checkout/cancel`,
+    });
+
+    return res.status(200).json({
+      url: session.url,
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return next(
+      new HttpError(
+        error.message || "Failed to initiate the registration.",
+        500
+      )
+    );
+  }
+};
+
+const handleSuccess = async (req, res, next) => {
+  try {
+    const { session_id, domain } = req.body;
+    console.log("Received session_id:", session_id);
+    console.log("Received domain:", domain);
+    const userId = req.userId;
+
+    if (!session_id) {
+      console.error("Missing session_id");
+      return res.status(400).json({ message: "session_id is required." });
+    }
+
+    if (!domain) {
+      console.error("Missing domain");
+      return res.status(400).json({ message: "domain is required." });
+    }
+
+    // Verify the session with Stripe
+    const session = await stripe.checkout.sessions.retrieve(session_id);
+    if (!session || session.payment_status !== "paid") {
+      return res
+        .status(400)
+        .json({ message: "Invalid or incomplete payment." });
+    }
+
+    const [sld, tld] = domain.split(".");
+
+    // Register the domain with Enom
     const registerResponse = await axios.get(`${enomBaseUrl}/interface.asp`, {
       params: {
         command: "Purchase",
@@ -92,38 +163,99 @@ const registerDomain = async (req, res, next) => {
         pw: enomApiKey,
         sld,
         tld,
-        responseType: "JSON",
+        responseType: "TEXT", // Ensure raw text response
         period: 1, // 1-year registration
       },
-      timeout: 15000,
+      responseType: "text", // Expect raw text response
+      timeout: 30000,
     });
-    console.log("Register Response Data:", registerResponse.data); // Log response to debug
-    if (
-      registerResponse.data["interface-response"] &&
-      registerResponse.data["interface-response"].RRPCode !== "200"
-    ) {
-      return next(new HttpError("Error registering the domain.", 500));
-    }
-    const newDomain = new Domain({
-      domain: domain,
-      expiryDate: new Date(
-        new Date().setFullYear(new Date().getFullYear() + 1) // After one year
-      ),
-      userId,
-    });
-    await newDomain.save();
-    await User.findByIdAndUpdate(userId, { $inc: { domainCount: 1 } });
 
-    return res.status(201).json({
-      message: "Domain registered successfully!",
-      domain: newDomain,
-    });
+    const rawResponse = registerResponse.data;
+    console.log("Raw Enom Response:", rawResponse);
+
+    // Parse the raw response by splitting lines
+    const lines = rawResponse.split("\n");
+    const parsedResponse = lines.reduce((acc, line) => {
+      const [key, value] = line.split("=");
+      if (key && value) {
+        acc[key.trim()] = value.trim();
+      }
+      return acc;
+    }, {});
+
+    console.log("Parsed Enom Response:", parsedResponse);
+
+    // Handle response with an error or success
+    const errorMessage = parsedResponse["RRPText"];
+    const rrpCode = parsedResponse["RRPCode"];
+    const domainRegistered = parsedResponse["DomainName"];
+    const orderId = parsedResponse["OrderID"];
+
+    if (!rrpCode || rrpCode !== "200") {
+      console.error("Enom Error:", errorMessage || "Unknown error");
+      return next(
+        new HttpError(
+          `Error registering the domain: ${errorMessage || "Unknown error"}`,
+          500
+        )
+      );
+    }
+
+    // Additional check for registration success
+    if (!domainRegistered && !orderId) {
+      console.error(
+        "Domain registration failed. No domain or order ID returned."
+      );
+      return next(new HttpError("Domain registration failed.", 500));
+    }
+
+    // Proceed if domain is registered or order ID exists
+    if (domainRegistered === domain || orderId) {
+      console.log("Domain registered successfully or order ID found:", orderId);
+
+      // Save the domain to the database
+      const newDomain = new Domain({
+        domain,
+        expiryDate: new Date(
+          new Date().setFullYear(new Date().getFullYear() + 1) // After one year
+        ),
+        userId,
+      });
+
+      try {
+        await newDomain.save();
+        await User.findByIdAndUpdate(userId, { $inc: { domainCount: 1 } });
+      } catch (error) {
+        console.error("Error saving domain or updating user:", error);
+        return next(new HttpError("Failed to save domain information.", 500));
+      }
+
+      console.log("New Domain Data:", newDomain);
+      console.log("User Update Data:", { $inc: { domainCount: 1 } });
+
+      return res.status(201).json({
+        message: "Domain registered successfully!",
+        domain: newDomain,
+      });
+    } else {
+      console.error("Domain mismatch: Expected domain not registered.");
+      return next(new HttpError("Domain registration failed.", 500));
+    }
   } catch (error) {
     console.error("Error:", error);
     return next(
-      new HttpError(error.message || "Failed to register the domain.", 500)
+      new HttpError(
+        error.message || "Failed to complete the registration.",
+        500
+      )
     );
   }
 };
 
-module.exports = { checkDomain, registerDomain };
+const handleCancel = (req, res) => {
+  return res.status(200).json({
+    message: "Payment canceled. No domain registration was made.",
+  });
+};
+
+module.exports = { checkDomain, registerDomain, handleSuccess, handleCancel };

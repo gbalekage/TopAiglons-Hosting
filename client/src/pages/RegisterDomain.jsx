@@ -1,21 +1,31 @@
-import React, { useState } from "react";
+import React from "react";
 import { motion } from "framer-motion";
 import { Spotlight } from "../components/ui/Spotlight";
 import GridBg from "../components/ui/GridBg";
+import useDomainStore from "../store/domainStore";
 
 const RegisterDomain = () => {
-  const [domain, setDomain] = useState("");
-  const isLoading = false;
-  const isAvailable = false;
-  const message = "";
-  const [error, setError] = useState(false);
+  const {
+    domain,
+    isAvailable,
+    isLoading,
+    message,
+    error,
+    setDomain,
+    checkDomainAvailability,
+    registerDomain,
+  } = useDomainStore();
 
-  const handleCheckDomain = async (e) => {
+  const handleCheckDomain = (e) => {
     e.preventDefault();
+    checkDomainAvailability(domain);
   };
 
-  const handleRegisterDomain = async (e) => {
+  const handleRegisterDomain = (e) => {
     e.preventDefault();
+    if (isAvailable) {
+      registerDomain(domain);
+    }
   };
 
   return (
@@ -87,7 +97,11 @@ const RegisterDomain = () => {
         {isAvailable && (
           <div className="bg-light/50 p-6 mt-8 rounded-lg shadow-lg flex flex-col justify-between">
             <h3 className="text-sm text-white mb-4">
-              Le domaine {domain} est disponible.
+              <small className="font-thin">
+                Le domaine{" "}
+                <span className="font-semibold text-secondary">{domain}</span>{" "}
+                est disponible.
+              </small>
             </h3>
             <button
               onClick={handleRegisterDomain}

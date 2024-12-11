@@ -134,7 +134,7 @@ const App = () => {
         <Route path="*" element={<ErrorPage />} />
 
         <Route
-          path="/payment-success"
+          path="/checkout/success"
           element={
             <ProtectedRoute>
               <PaymentSuccess />
@@ -142,7 +142,7 @@ const App = () => {
           }
         />
         <Route
-          path="/paiement-annuler"
+          path="/checkout/cancel"
           element={
             <ProtectedRoute>
               <PaymentCancel />
