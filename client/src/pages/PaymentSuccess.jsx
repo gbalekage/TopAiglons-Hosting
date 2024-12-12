@@ -17,6 +17,8 @@ const PaymentSuccess = () => {
 
     if (!sessionId || !domain) {
       console.error("Invalid or missing parameters: session_id or domain.");
+      setMessage("Invalid or missing payment details.");
+      setLoading(false);
       return;
     }
 
@@ -32,18 +34,28 @@ const PaymentSuccess = () => {
         }
       );
       console.log("Payment success response:", response.data);
+
+      // Set success message and redirect to dashboard
+      setMessage("Payment and domain registration were successful!");
+      setLoading(false);
+
+      // Redirect after a short delay
+      setTimeout(() => {
+        navigate("/dashboard", { state: { successMessage: message } });
+      }, 3000); // Redirect after 3 seconds
     } catch (error) {
-      console.error("Error in handlePaymentSuccess:", error.response?.data || error.message);
+      console.error(
+        "Error in handlePaymentSuccess:",
+        error.response?.data || error.message
+      );
+      setMessage("An error occurred while processing your payment.");
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     handlePaymentSuccess();
   }, []);
-
-  const handleRedirect = () => {
-    navigate("/dashboard"); // Redirect to dashboard or any other page
-  };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center text-center">
@@ -52,12 +64,14 @@ const PaymentSuccess = () => {
       ) : (
         <div>
           <p className="text-lg font-semibold">{message}</p>
-          <button
-            onClick={handleRedirect}
-            className="mt-4 px-4 py-2 bg-primary text-white rounded"
-          >
-            Go to Dashboard
-          </button>
+          {!loading && (
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="mt-4 px-4 py-2 bg-primary text-white rounded"
+            >
+              Go to Dashboard
+            </button>
+          )}
         </div>
       )}
     </div>

@@ -41,7 +41,7 @@ const register = async (req, res, next) => {
 
     generateToken(res, user._id);
 
-    // await sendVerificationMail(user.email, vericationCode);
+    await sendVerificationMail(user.email, vericationCode);
 
     res.status(201).json({
       success: true,
@@ -74,7 +74,7 @@ const verifyEmail = async (req, res, next) => {
     user.vericationCodeExpiresAt = undefined;
     await user.save();
 
-    // await sendWelcomeEmail(user.email, user.name);
+    await sendWelcomeEmail(user.email, user.name);
 
     res.status(201).json({
       success: true,
@@ -148,10 +148,10 @@ const forgotPassword = async (req, res) => {
     await user.save();
 
     // send email
-    // await sendPasswordResetEmail(
-    //   user.email,
-    //   `${process.env.CLIENT_URL}/reset-password/${resetToken}`
-    // );
+    await sendPasswordResetEmail(
+      user.email,
+      `${process.env.CLIENT_URL}/reset-password/${resetToken}`
+    );
 
     res.status(200).json({
       success: true,
@@ -187,7 +187,7 @@ const resetPassword = async (req, res) => {
     user.resetPasswordTokenExpiresAt = undefined;
     await user.save();
 
-    // await sendResetSuccessEmail(user.email);
+    await sendResetSuccessEmail(user.email);
 
     res
       .status(200)

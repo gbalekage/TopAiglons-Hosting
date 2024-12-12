@@ -7,7 +7,7 @@ import { Loader } from "lucide-react";
 
 const EmailVerificationPage = () => {
   useEffect(() => {
-    document.title = `Confirmation code`;
+    document.title = `Verification du compte`;
   }, []);
 
   const [code, setCode] = useState(["", "", "", "", "", ""]);

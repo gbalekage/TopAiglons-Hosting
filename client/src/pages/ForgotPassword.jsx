@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { useAuthStore } from "../store/authStore";
 import { Spotlight } from "../components/ui/Spotlight";
@@ -7,6 +7,9 @@ import { ArrowLeft, Loader, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
 
 const ForgotPassword = () => {
+  useEffect(() => {
+    document.title = `Mot de passe oublier`;
+  }, []);
   const [email, setEmail] = useState("");
   const [isSubmited, setIsSubmited] = useState(false);
 

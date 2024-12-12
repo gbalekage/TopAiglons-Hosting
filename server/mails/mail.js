@@ -28,6 +28,28 @@ const sendVerificationMail = async (email, vericationCode) => {
   }
 };
 
+// const paymentSuccessEmail = async (email, domain, price) => {
+//   const recipient = [{ email }];
+
+//   try {
+//     const response = await mailClient.send({
+//       from: sender,
+//       to: recipient,
+//       subject: "",
+//       html: VERIFICATION_EMAIL_TEMPLATE.replace(
+//         "{vericationCode}",
+//         vericationCode
+//       ),
+//       category: "Email verification",
+//     });
+
+//     console.log("Email sent successfully", response);
+//   } catch (error) {
+//     console.error(`Error in send verification mail`, error);
+//     throw new Error(`Error sending verfication email: ${error}`);
+//   }
+// };
+
 const sendPasswordResetEmail = async (email, resetURL) => {
   const recipient = [{ email }];
 

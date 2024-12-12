@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useEffect } from "react";
 
 const PaymentCancel = () => {
-  return (
-    <div>PaymentCancel</div>
-  )
-}
+  useEffect(() => {
+    document.title = `Payment Canceled`;
+  }, []);
+  return <div>PaymentCancel</div>;
+};
 
-export default PaymentCancel
+export default PaymentCancel;

@@ -6,6 +6,7 @@ const { enomUsername, enomApiKey, enomBaseUrl } = require("../config/config");
 const { default: axios } = require("axios");
 const domainPrices = require("../utils/domainPrices");
 const stripe = require("stripe")(process.env.STIPE_KEY);
+const { paymentSuccessEmail } = require("../mails/mail");
 
 //check the domain
 const checkDomain = async (req, res, next) => {
@@ -145,7 +146,6 @@ const handleSuccess = async (req, res, next) => {
       return res.status(400).json({ message: "domain is required." });
     }
 
-    // Verify the session with Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id);
     if (!session || session.payment_status !== "paid") {
       return res
@@ -154,8 +154,6 @@ const handleSuccess = async (req, res, next) => {
     }
 
     const [sld, tld] = domain.split(".");
-
-    // Register the domain with Enom
     const registerResponse = await axios.get(`${enomBaseUrl}/interface.asp`, {
       params: {
         command: "Purchase",
@@ -163,17 +161,16 @@ const handleSuccess = async (req, res, next) => {
         pw: enomApiKey,
         sld,
         tld,
-        responseType: "TEXT", // Ensure raw text response
-        period: 1, // 1-year registration
+        responseType: "TEXT",
+        period: 1,
       },
-      responseType: "text", // Expect raw text response
+      responseType: "text",
       timeout: 30000,
     });
 
     const rawResponse = registerResponse.data;
     console.log("Raw Enom Response:", rawResponse);
 
-    // Parse the raw response by splitting lines
     const lines = rawResponse.split("\n");
     const parsedResponse = lines.reduce((acc, line) => {
       const [key, value] = line.split("=");
@@ -185,7 +182,6 @@ const handleSuccess = async (req, res, next) => {
 
     console.log("Parsed Enom Response:", parsedResponse);
 
-    // Handle response with an error or success
     const errorMessage = parsedResponse["RRPText"];
     const rrpCode = parsedResponse["RRPCode"];
     const domainRegistered = parsedResponse["DomainName"];
@@ -200,27 +196,24 @@ const handleSuccess = async (req, res, next) => {
         )
       );
     }
-
-    // Additional check for registration success
     if (!domainRegistered && !orderId) {
       console.error(
         "Domain registration failed. No domain or order ID returned."
       );
       return next(new HttpError("Domain registration failed.", 500));
     }
-
-    // Proceed if domain is registered or order ID exists
     if (domainRegistered === domain || orderId) {
       console.log("Domain registered successfully or order ID found:", orderId);
 
-      // Save the domain to the database
       const newDomain = new Domain({
         domain,
         expiryDate: new Date(
-          new Date().setFullYear(new Date().getFullYear() + 1) // After one year
+          new Date().setFullYear(new Date().getFullYear() + 1)
         ),
         userId,
       });
+
+      // await paymentSuccessEmail(domain, price);
 
       try {
         await newDomain.save();

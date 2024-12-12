@@ -1,7 +1,15 @@
 import { motion } from "framer-motion";
-import Header from "../components/dashboard/Header";
+import { useEffect } from "react";
+import { useAuthStore } from "../store/authStore";
+import { useLocation } from "react-router-dom";
 
 const DashboardPage = () => {
+  const { user, logout } = useAuthStore();
+  const location = useLocation();
+  const successMessage = location.state?.successMessage;
+  useEffect(() => {
+    document.title = `${user.name} - Dashboard`;
+  }, []);
   return (
     <section className="min-h-screen flex items-center justify-center relative">
       <motion.div
@@ -12,7 +20,8 @@ const DashboardPage = () => {
       >
         {/* <Header /> */}
         <div className="flex">
-          {/* aside */}
+          <p>{successMessage && <p className="text-green-600">{successMessage}</p>}</p>
+          {/* aside */} 
           <div className="w-1/4 p-4 bg-primary ">Aside</div>
 
           {/* Main */}

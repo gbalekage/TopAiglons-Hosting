@@ -27,7 +27,7 @@ const ProtectedRoute = ({ children }) => {
   }
 
   if (user && !user.isVerified) {
-    return <Navigate to="/verify-email" replace />;
+    return <Navigate to="/verify-email" replace />
   }
 
   return children;
@@ -66,89 +66,17 @@ const App = () => {
       <Header />
       <Routes>
         <Route path="/" element={<HomePage />} />
-        <Route
-          path="/login"
-          element={
-            <RedirectUser>
-              <SignIn />
-            </RedirectUser>
-          }
-        />
-        <Route
-          path="/register"
-          element={
-            <RedirectUser>
-              <Register />
-            </RedirectUser>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <DashboardPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/my-profile"
-          element={
-            <ProtectedRoute>
-              <ProfilePage />
-            </ProtectedRoute>
-          }
-        />
-        {/* <Route path="/register-domain" element={<RegisterDomain />} /> */}
-        <Route
-          path="/register-domain"
-          element={
-            <ProtectedRoute>
-              <RegisterDomain />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/verify-email"
-          element={
-            <RedirectUser>
-              <EmailVerificationPage />
-            </RedirectUser>
-          }
-        />
-        <Route
-          path="/forgot-password"
-          element={
-            <RedirectUser>
-              <ForgotPassword />
-            </RedirectUser>
-          }
-        />
-        <Route
-          path="/reset-password/:token"
-          element={
-            <RedirectUser>
-              <ResetPassword />
-            </RedirectUser>
-          }
-        />
+        <Route path="/login" element={<RedirectUser><SignIn /></RedirectUser>}/>
+        <Route path="/register" element={<RedirectUser><Register /></RedirectUser>}/>
+        <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>}/>
+        <Route path="/my-profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute> }/>
+        <Route path="/register-domain" element={<ProtectedRoute><RegisterDomain /></ProtectedRoute>}/>
+        <Route path="/verify-email" element={<RedirectUser><EmailVerificationPage /></RedirectUser>}/>
+        <Route path="/forgot-password" element={<RedirectUser><ForgotPassword /></RedirectUser>}/>
+        <Route path="/reset-password/:token" element={<RedirectUser><ResetPassword /></RedirectUser>}/>
         <Route path="*" element={<ErrorPage />} />
-
-        <Route
-          path="/checkout/success"
-          element={
-            <ProtectedRoute>
-              <PaymentSuccess />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/checkout/cancel"
-          element={
-            <ProtectedRoute>
-              <PaymentCancel />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="/checkout/success" element={<ProtectedRoute><PaymentSuccess /></ProtectedRoute>}/>
+        <Route path="/checkout/cancel" element={<ProtectedRoute><PaymentCancel /></ProtectedRoute>}/>
       </Routes>
       <Toaster />
       <Footer />
