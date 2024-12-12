@@ -1,35 +1,11 @@
-import { motion } from "framer-motion";
-import { useEffect } from "react";
-import { useAuthStore } from "../store/authStore";
-import { useLocation } from "react-router-dom";
+import React from "react";
 
 const DashboardPage = () => {
-  const { user, logout } = useAuthStore();
-  const location = useLocation();
-  const successMessage = location.state?.successMessage;
-  useEffect(() => {
-    document.title = `${user.name} - Dashboard`;
-  }, []);
   return (
-    <section className="min-h-screen flex items-center justify-center relative">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 1 }}
-        className="max-w-1xl md:max-w-4xl w-full bg-white/20 bg-opacity-50 backdrop-filter backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden"
-      >
-        {/* <Header /> */}
-        <div className="flex">
-          <p>{successMessage && <p className="text-green-600">{successMessage}</p>}</p>
-          {/* aside */} 
-          <div className="w-1/4 p-4 bg-primary ">Aside</div>
-
-          {/* Main */}
-          <div className="w-3/4 p-6">Main</div>
-        </div>
-      </motion.div>
-    </section>
-  );
+    <div className="flex justify-center items-center min-h-full mt-[10rem] bg-primary/20">
+      Lorem ipsum dolor sit amet consectetur adipisicing elit. Assumenda voluptate veritatis unde, inventore ab quasi rem vero est voluptates aliquid ut ea dignissimos amet repudiandae quis quam. Ducimus, deserunt repellat.
+    </div>
+  )
 };
 
 export default DashboardPage;

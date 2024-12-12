@@ -7,6 +7,7 @@ const upload = require("express-fileupload");
 
 const authRoutes = require("./routes/authRoutes");
 const domainRoutes = require("./routes/domainRoutes");
+const planRoutes = require("./routes/planRoutes");
 const { notFound, errorHandler } = require("./middlewares/errorMiddleware");
 
 const app = express();
@@ -20,9 +21,10 @@ app.use(upload());
 app.use("/uploads", express.static(__dirname + "/uploads"));
 app.use(cookieParser());
 
-// routes
+// routesx
 app.use("/api/auth", authRoutes);
 app.use("/api/domain", domainRoutes);
+app.use("/api/plan", planRoutes);
 
 //errors
 app.use(notFound);
